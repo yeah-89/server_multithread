@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class SocketHandler implements Runnable {
-    private Socket s;
+    private final Socket s;
 
     public SocketHandler(Socket so) {
         s = so;
@@ -18,25 +18,27 @@ public class SocketHandler implements Runnable {
         try (
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             PrintWriter out = new PrintWriter(s.getOutputStream(), true);
-            Socket autoCloseableSocket = s
+            Socket autoCloseableSocket = s;
         ) {
             boolean var = true;
-            String str = "";
-            Double num1 = 0.0;
-            Double num2 = 0.0;
 
             while (var) {
+                String str = "";
+                double num1 = 0.0;
+                double num2 = 0.0;
                 boolean datiValidi = false;
 
                 do {
                     try {
                         str = in.readLine();
+                        
                         if (str == null) {
                             var = false;
                             break;
                         }
 
-                        if (str.equals("exit")) {
+                        if (str.equalsIgnoreCase("exit")) {
+                            var = false;
                             datiValidi = true;
                             break; 
                         }
@@ -46,21 +48,26 @@ public class SocketHandler implements Runnable {
                             num2 = Double.parseDouble(in.readLine());
                             datiValidi = true;
                         } else {
-                            out.println("opertatore non valido");
+                            out.println("Operatore non valido. Usa +, -, *, / o exit");
                         }
 
                     } catch (NumberFormatException e) {
-                        out.println("Errore: inserimento numeri sbagliato");
+                        out.println("Errore: inserimento numeri sbagliato. Riprova operatore e numeri.");
                         datiValidi = false;
                     }
                 } while (!datiValidi);
 
                 if (!var) {
+                    if (str != null && str.equalsIgnoreCase("exit")) {
+                        System.out.println("Client disconnesso tramite comando 'exit'.");
+                        out.println("exit");
+                    }
                     break;
                 }
-                    
-                if (num1 == 0 && num2 == 0 && !str.equals("exit")) {
-                    break;
+                
+                if (num1 == 0 && num2 == 0) {
+                    out.println("Risposta: 0.0");
+                    continue;
                 }
                 
                 double ris = 0;
@@ -80,15 +87,9 @@ public class SocketHandler implements Runnable {
                         if (num2 == 0) {
                             out.println("ERR-0:divided_by_zero");
                             inviaRisposta = false;
-                            break;
                         } else {
                             ris = num1 / num2;
                         }
-                        break;
-                    case "exit":
-                        System.out.println("Disconnesso");
-                        var = false;
-                        inviaRisposta = false;
                         break;
                     default:
                         inviaRisposta = false;
@@ -100,10 +101,7 @@ public class SocketHandler implements Runnable {
                 }
             } 
         } catch (IOException e) {
-            System.out.println("Errore di I/O");
+            System.out.println("Errore di I/O nella gestione del client: " + e.getMessage());
         }
     }
 }
-
-
-
